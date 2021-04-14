@@ -19,6 +19,7 @@ const getMedia  = async () => {
     /* ストリームを使用 */
   } catch(err) {
     /* エラーを処理 */
+    console.log(err)
   }
 }
 
