@@ -41,10 +41,9 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function InputFormRemote() {
+export default function InputFormRemote({ remotePeername, setRemotePeername }) {
   const label = '相手の名前'
   const classes = useStyles();
-
 
   return (
     <Container component="main" maxWidth="xs">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect , useState} from 'react';
 import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import TextField from '@material-ui/core/TextField';
@@ -41,10 +41,29 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function InputFormLocal() {
+
+
+export default function InputFormLocal({localPeername, setLoaclPeername}) {
   const label = 'あなたの名前'
   const classes = useStyles();
+  const [ name, setName ] = useState('')
+  const [ disabled, setDisabled ] = useState(false)
+  const [ isComposed, setIsComposed] = useState(false)
+  // onCompositionEnd onCompositionStart onCompositionUpdate
 
+  useEffect(() => {
+    const disabled = name === '';
+    setDisabled(disabled)
+  }, [name])
+
+  const initializeLocalPeer = useCallback(
+    (e) => {
+      setLoaclPeername(name);
+      e.preventDefault();
+    }, [name, setLoaclPeername]
+  );
+
+  if(localPeername !== '') return <></>;
 
   return (
     <Container component="main" maxWidth="xs">
@@ -60,6 +79,16 @@ export default function InputFormLocal() {
             fullWidth
             label={label}
             name="name"
+            onChange={ (e) => setName(e.target.value) }
+            onCompositionEnd={() => {setIsComposed(false)}}
+            onCompositionStart={() => {setIsComposed(true)}}
+            value = {name}
+            onKeyDown={(e) => {
+                console.log(e.target.value)
+                if (isComposed) return;
+                if (e.target.value === '') return
+                if (e.key === 'Enter') initializeLocalPeer(e);
+            }}
             autoFocus
           />
           <Button
@@ -68,6 +97,11 @@ export default function InputFormLocal() {
             variant="contained"
             color="primary"
             className={classes.submit}
+            disabled={disabled}
+            onClick={(e) => {
+              initializeLocalPeer(e);
+            }}
+
           >
             決定
           </Button>
