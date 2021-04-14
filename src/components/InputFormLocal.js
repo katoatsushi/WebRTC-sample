@@ -60,7 +60,7 @@ export default function InputFormLocal({rtcClient}) {
     (e) => {
       rtcClient.localPeername = name;
       console.log({rtcClient})
-      rtcClient.setRtcClient(rtcClient)
+      rtcClient.setRtcClient()
       e.preventDefault();
     }, [name, rtcClient]
   );
