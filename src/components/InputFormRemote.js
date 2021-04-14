@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect , useState} from 'react';
 import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import TextField from '@material-ui/core/TextField';
@@ -41,9 +41,28 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function InputFormRemote({ remotePeername, setRemotePeername }) {
+export default function InputFormRemote({ rtcClient }) {
   const label = '相手の名前'
   const classes = useStyles();
+  const [ name, setName ] = useState('')
+  const [ disabled, setDisabled ] = useState(false)
+  const [ isComposed, setIsComposed] = useState(false)
+
+  useEffect(() => {
+    const disabled = name === '';
+    setDisabled(disabled)
+  }, [name])
+
+  const initializeLocalPeer = useCallback(
+    (e) => {
+      rtcClient.remotePeername = name;
+      rtcClient.setRtcClient(rtcClient)
+      e.preventDefault();
+    }, [name, rtcClient ]
+  );
+
+  if(rtcClient.localPeername === '') return <></>;
+  if(rtcClient.remotePeername !== '') return <></>;
 
   return (
     <Container component="main" maxWidth="xs">
@@ -59,6 +78,16 @@ export default function InputFormRemote({ remotePeername, setRemotePeername }) {
             fullWidth
             label={label}
             name="name"
+            onChange={ (e) => setName(e.target.value) }
+            onCompositionEnd={() => {setIsComposed(false)}}
+            onCompositionStart={() => {setIsComposed(true)}}
+            value = {name}
+            onKeyDown={(e) => {
+                console.log(e.target.value)
+                if (isComposed) return;
+                if (e.target.value === '') return
+                if (e.key === 'Enter') initializeLocalPeer(e);
+            }}
             autoFocus
           />
           <Button
@@ -67,6 +96,11 @@ export default function InputFormRemote({ remotePeername, setRemotePeername }) {
             variant="contained"
             color="primary"
             className={classes.submit}
+            disabled={disabled}
+            onClick={(e) => {
+              initializeLocalPeer(e);
+            }}
+
           >
             決定
           </Button>
