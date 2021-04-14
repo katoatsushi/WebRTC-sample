@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {Button} from '@material-ui/core'
 import InputFormRemote from './InputFormRemote'
 import InputFormLocal from './InputFormLocal'
@@ -18,11 +18,18 @@ const getMedia  = async () => {
 getMedia();
 
 const App = () =>  {
+  const [localPeername, setLoaclPeername] = useState('');
+  const [remotePeername, setRemotePeername] = useState('');
   return (
     <>
-    <InputFormRemote/>
-    
-    <InputFormLocal/>
+      <InputFormLocal 
+        localPeername={localPeername}
+        setLoaclPeername={setLoaclPeername}
+      />
+      <InputFormRemote 
+        remotePeername={remotePeername}
+        setRemotePeername={setRemotePeername}
+      />
     </>
   );
 }
