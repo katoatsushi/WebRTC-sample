@@ -25,6 +25,37 @@ export default class RtcClient {
         }
     }
 
+    //メディアストリームを設定するためのメソッド
+    async setMediaStream() {
+        await this.getUserMedia();
+        // 相手のビデオと音声を取得
+        this.addTracks()
+        this.setRtcClient();
+    }
+
+    addTracks(){
+        this.addAudioTrack();
+        this.addVideoTrack();
+    }
+
+    addAudioTrack(){
+        // 相手側に自分の音声Trackを送信
+        this.rtcPeerConnection.addTrack(this.audioTrack, this.mediaStream);
+    }
+
+    addVideoTrack(){
+        // 相手側に自分のビデオTrackを送信
+        console.log({MediaStream: this.mediaStream})
+        this.rtcPeerConnection.addTrack(this.videoTrack, this.mediaStream);
+    }
+
+    get audioTrack() {
+        return this.mediaStream.getAudioTracks()[0]
+    }
+    get videoTrack() {
+        return this.mediaStream.getVideoTracks()[0]
+    }
+
     startListening(localPeername) {
         this.localPeername = localPeername;
         this.setRtcClient();
