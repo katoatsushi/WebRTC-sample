@@ -1,8 +1,7 @@
 import FirebaseSignallingClient from "./FirebaseSignallingClient";
 export default class RtcClient {
-    constructor(setRtcClient) {
+    constructor(remoteVideoRef, setRtcClient) {
         const config = {
-            // スタンサーバーの情報
             // このクライアントがインターンネット上でどのIPアドレスになるかを教えてくれる
             iceServers: [{urls: "stun:stun.stunprotocol.org"}]
         }
@@ -10,6 +9,7 @@ export default class RtcClient {
         this.firebaseSignallingClient = new FirebaseSignallingClient()
         this.localPeername = '';
         this.remotePeername = '';
+        this.remoteVideoRef = remoteVideoRef;
         this._setRtcClient = setRtcClient;
         this.mediaStream = null;
     }
