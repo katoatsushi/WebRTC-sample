@@ -54,8 +54,8 @@ export default function InputFormRemote({ rtcClient }) {
   }, [name])
 
   const initializeLocalPeer = useCallback(
-    (e) => {
-      rtcClient.connect(name)
+    async (e) => {
+      await rtcClient.connect(name)
       e.preventDefault();
     }, [name, rtcClient ]
   );
@@ -81,11 +81,11 @@ export default function InputFormRemote({ rtcClient }) {
             onCompositionEnd={() => {setIsComposed(false)}}
             onCompositionStart={() => {setIsComposed(true)}}
             value = {name}
-            onKeyDown={(e) => {
+            onKeyDown={async (e) => {
                 console.log(e.target.value)
                 if (isComposed) return;
                 if (e.target.value === '') return
-                if (e.key === 'Enter') initializeLocalPeer(e);
+                if (e.key === 'Enter') await initializeLocalPeer(e);
             }}
             autoFocus
           />
@@ -96,9 +96,7 @@ export default function InputFormRemote({ rtcClient }) {
             color="primary"
             className={classes.submit}
             disabled={disabled}
-            onClick={(e) => {
-              initializeLocalPeer(e);
-            }}
+            onClick={async (e) => { await  initializeLocalPeer(e); }}
 
           >
             決定

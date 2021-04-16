@@ -18,5 +18,33 @@ export default class FirebaseSignallingClient {
         this.database = firebase.database();
         this.localPeername = '';
         this.remotePeername = '';
-    } 
+    }
+    setPeerNames(localPeername, remotePeername) {
+        this.localPeername = localPeername;
+        this.remotePeername = remotePeername;
+    }
+
+    get targetRef() {
+        return this.database.ref(this.remotePeername)
+    }
+    
+    async sendOffer(sessionDescription) {
+        // firebase のどこに書き込むのか, //今回は相手のpathなのでremotePeername
+        await this.targetRef.set({
+            type: 'offer',
+            sender: this.localPeername,
+            sessionDescription,
+        });
+    }
+
+    async sendAnswer(sessionDescription) {
+        // firebase のどこに書き込むのか, //今回は相手のpathなのでremotePeername
+        await this.targetRef.set({
+            type: 'answer',
+            sender: this.localPeername,
+            sessionDescription,
+        });
+    }
+
+
 }
