@@ -1,4 +1,7 @@
 import FirebaseSignallingClient from "./FirebaseSignallingClient";
+
+const INITIAL_AUDIO_ENABLED = false;
+
 export default class RtcClient {
     constructor(remoteVideoRef, setRtcClient) {
         const config = {
@@ -7,12 +10,17 @@ export default class RtcClient {
         }
         this.rtcPeerConnection = new RTCPeerConnection(config);
         this.firebaseSignallingClient = new FirebaseSignallingClient()
-        this.localPeername = '';
-        this.remotePeername = '';
+        this.localPeerName = '';
+        this.remotePeerName = '';
         this.remoteVideoRef = remoteVideoRef;
         this._setRtcClient = setRtcClient;
         this.mediaStream = null;
     }
+
+    get initialAudioMuted() {
+        return !INITIAL_AUDIO_ENABLED
+    }
+
     setRtcClient() {
         this._setRtcClient(this);
     }
@@ -39,6 +47,7 @@ export default class RtcClient {
     }
 
     addAudioTrack(){
+        this.audioTrack.enabled = INITIAL_AUDIO_ENABLED;
         // 相手側に自分の音声Trackを送信
         this.rtcPeerConnection.addTrack(this.audioTrack, this.mediaStream);
     }
@@ -54,9 +63,14 @@ export default class RtcClient {
     get videoTrack() {
         return this.mediaStream.getVideoTracks()[0]
     }
+    
+    toggleAudio () {
+        this.audioTrack.enabled = !this.audioTrack.enabled
+        this.setRtcClient()
+    }
 
     async offer() {
-       const sessionDescription =  await this.createOffer();
+       const sessionDescription = await this.createOffer();
        await this.setLocalDescription(sessionDescription)
        await this.sendOffer()
     }
@@ -68,7 +82,7 @@ export default class RtcClient {
             console.error(e)
         }
     }
-    async setLocalDescription(sessionDescription){
+    async setLocalDescription(sessionDescription) {
         try{
             await this.rtcPeerConnection.setLocalDescription(sessionDescription)
         } catch(error) {
@@ -77,8 +91,8 @@ export default class RtcClient {
     }
     async sendOffer() {
         this.firebaseSignallingClient.setPeerNames(
-            this.localPeername,
-            this.remotePeername
+            this.localPeerName,
+            this.remotePeerName
         );
         // 自分の画面をシグナリングサーバーに送る
         await this.firebaseSignallingClient.sendOffer(this.localDescription)
@@ -88,7 +102,7 @@ export default class RtcClient {
         this.rtcPeerConnection.ontrack = (rtcTrackEvent) => {
             if (rtcTrackEvent.track.kind !== "video") return;
             
-            const remoteMediaStream =  rtcTrackEvent.streams[0];
+            const remoteMediaStream = rtcTrackEvent.streams[0];
             this.remoteVideoRef.current.srcObject = remoteMediaStream;
             this.setRtcClient();
         }
@@ -97,20 +111,20 @@ export default class RtcClient {
 
     async answer(sender, sessionDescription) {
         try{
-            this.remotePeername = sender;
+            this.remotePeerName = sender;
             this.setOnicecandidateCallback();
             this.setOntrack();
             await this.setRemoteDescription(sessionDescription)
             const answer = await this.rtcPeerConnection.createAnswer();
-            this.rtcPeerConnection.setLocalDescription(answer)
+            await this.rtcPeerConnection.setLocalDescription(answer)
             await this.sendAnswer();
         }catch(e){
             console.log(e)
         }
     }
     
-    async connect(remotePeername) {
-        this.remotePeername = remotePeername;
+    async connect(remotePeerName) {
+        this.remotePeerName = remotePeerName;
         this.setOnicecandidateCallback();
         this.setOntrack();
         await this.offer();
@@ -118,46 +132,69 @@ export default class RtcClient {
     }
 
     async setRemoteDescription(sessionDescription) {
-        return await this.rtcPeerConnection.setRemoteDescription(sessionDescription)
+        await this.rtcPeerConnection.setRemoteDescription(sessionDescription)
     }
 
-    sendAnswer() {
-        this.firebaseSignallingClient.setPeernames(
-            this.localPeername,
-            this.remotePeername
+    async sendAnswer() {
+        this.firebaseSignallingClient.setPeerNames(
+            this.localPeerName,
+            this.remotePeerName
         )
-        this.firebaseSignallingClient.sendAnswer(this.localDescription);
+        await this.firebaseSignallingClient.sendAnswer(this.localDescription);
     }
 
+    async saveReceivedSessionDescription(sessionDescription) {
+        try {
+            await this.setRemoteDescription(sessionDescription)
+        } catch (e) {
+            console.log(e)
+        }
+    }
 
     get localDescription() {
         return this.rtcPeerConnection.localDescription.toJSON();
     }
-    setOnicecandidateCallback(){
-        this.rtcPeerConnection.onicecandidate = ({candidate}) => {
+
+    async addIceCandidate(candidate){
+        try{
+            const iceCandidate = new RTCIceCandidate(candidate);
+            await this.rtcPeerConnection.addIceCandidate(iceCandidate);
+        }catch (e) {
+            console.log({e})
+        }
+    }
+
+    setOnicecandidateCallback() {
+        this.rtcPeerConnection.onicecandidate = async ({ candidate }) => {
             if (candidate) {
-                // Send the candidate to the remote peer
-            } else {
-                // All ICE candidates have been sent
+                await this.firebaseSignallingClient.sendCandidate(candidate.toJSON())
             }
         }
     }
 
-    startListening(localPeername) {
-        this.localPeername = localPeername;
+ async startListening(localPeerName) {
+        this.localPeerName = localPeerName;
         this.setRtcClient();
+        await this.firebaseSignallingClient.remove(localPeerName)
         this.firebaseSignallingClient.database
-        .ref(localPeername)
+        .ref(localPeerName)
         .on('value', async (snapshot) => {
             const data = snapshot.val();
             if (data === null) return;
-            console.log({ data })
-            const { sender, sessionDescription, type } = data;
+
+            const { candidate, sender, sessionDescription, type } = data;
             switch(type){
                 case 'offer':
                     await this.answer(sender, sessionDescription)
                     break;
+                case 'answer':
+                    await this.saveReceivedSessionDescription(sessionDescription);
+                    break;
+                case 'candidate':
+                    await this.addIceCandidate(candidate);
+                    break;
                 default:
+                    this.setRtcClient();
                     break;
             }
         });

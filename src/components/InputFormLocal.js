@@ -57,15 +57,13 @@ export default function InputFormLocal({rtcClient}) {
   }, [name])
 
   const initializeLocalPeer = useCallback(
-    (e) => {
-      rtcClient.startListening(name);
-      // rtcClient.localPeername = name;
-      // rtcClient.setRtcClient()
+    async (e) => {
+      await rtcClient.startListening(name);
       e.preventDefault();
     }, [name, rtcClient]
   );
 
-  if(rtcClient.localPeername !== '') return <></>;
+  if(rtcClient.localPeerName !== '') return <></>;
 
   return (
     <Container component="main" maxWidth="xs">
@@ -85,11 +83,10 @@ export default function InputFormLocal({rtcClient}) {
             onCompositionEnd={() => {setIsComposed(false)}}
             onCompositionStart={() => {setIsComposed(true)}}
             value = {name}
-            onKeyDown={(e) => {
-                console.log(e.target.value)
+            onKeyDown={async (e) => {
                 if (isComposed) return;
                 if (e.target.value === '') return
-                if (e.key === 'Enter') initializeLocalPeer(e);
+                if (e.key === 'Enter') await initializeLocalPeer(e);
             }}
             autoFocus
           />
@@ -100,8 +97,8 @@ export default function InputFormLocal({rtcClient}) {
             color="primary"
             className={classes.submit}
             disabled={disabled}
-            onClick={(e) => {
-              initializeLocalPeer(e);
+            onClick={async (e) => {
+              await initializeLocalPeer(e);
             }}
 
           >

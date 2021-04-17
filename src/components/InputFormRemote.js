@@ -60,8 +60,8 @@ export default function InputFormRemote({ rtcClient }) {
     }, [name, rtcClient ]
   );
 
-  if(rtcClient.localPeername === '') return <></>;
-  if(rtcClient.remotePeername !== '') return <></>;
+  if(rtcClient.localPeerName === '') return <></>;
+  if(rtcClient.remotePeerName !== '') return <></>;
 
   return (
     <Container component="main" maxWidth="xs">
@@ -82,7 +82,6 @@ export default function InputFormRemote({ rtcClient }) {
             onCompositionStart={() => {setIsComposed(true)}}
             value = {name}
             onKeyDown={async (e) => {
-                console.log(e.target.value)
                 if (isComposed) return;
                 if (e.target.value === '') return
                 if (e.key === 'Enter') await initializeLocalPeer(e);

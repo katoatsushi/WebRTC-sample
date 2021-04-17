@@ -18,7 +18,7 @@ const useStyles = makeStyles((theme) => ({
 const VideoArea = ({rtcClient}) => {
   const classes = useStyles();
 
-  // if (rtcClient.localPeername === "") return <></>;
+  // if (rtcClient.localPeerName === "") return <></>;
   if (rtcClient === null) return <></>;
 
   return (

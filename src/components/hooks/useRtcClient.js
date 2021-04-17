@@ -17,7 +17,7 @@ const useRtcClient = () => {
         }
         init();
     },[])
-    console.log({rtcClient})
+    // console.log({rtcClient})
 
     return rtcClient;
 };
